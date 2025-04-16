@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import {
+import { 
   Box,
   Button,
   Container,
   TextField,
   Typography,
   Alert,
+  CircularProgress // ✅ CHANGED: Added loading spinner (optional)
 } from '@mui/material';
 import { useAppDispatch, useAppSelector } from '../hooks/useTypedRedux';
-import { registerUser } from '../features/auth/authSlice';
+import { registerUser, clearAuthStatus } from '../features/auth/authSlice';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Interface for the registration form input fields.
@@ -26,12 +28,15 @@ interface RegisterFormInputs {
  */
 const Register: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { error } = useAppSelector((state) => state.auth);
+  const navigate = useNavigate();
+
+  const { error, success, loading } = useAppSelector((state) => state.auth); // ✅ CHANGED: Include loading state
 
   // Setup form and validations using react-hook-form
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<RegisterFormInputs>();
 
@@ -43,6 +48,25 @@ const Register: React.FC = () => {
     dispatch(registerUser(data));
   };
 
+  // Reset form and redirect if success
+  useEffect(() => {
+    if (success) {
+      reset();
+      const timer = setTimeout(() => {
+        navigate('/login');
+        dispatch(clearAuthStatus());
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [success, reset, navigate, dispatch]);
+
+  // ✅ CHANGED: Clear auth state on unmount
+  useEffect(() => {
+    return () => {
+      dispatch(clearAuthStatus());
+    };
+  }, [dispatch]);
+
   return (
     <Container maxWidth="sm">
       <Box sx={{ mt: 8 }}>
@@ -52,6 +76,13 @@ const Register: React.FC = () => {
 
         {/* Show API or validation error */}
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+        {/* Show success message */}
+        {success && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            Registration successful! Redirecting to login...
+          </Alert>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           {/* Username Field */}
@@ -109,13 +140,14 @@ const Register: React.FC = () => {
           />
 
           {/* Submit Button */}
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
+          <Button 
+            type="submit" 
+            variant="contained" 
+            fullWidth 
             sx={{ mt: 3 }}
+            disabled={loading} // ✅ CHANGED: Disable button when loading
           >
-            Register
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Register'} {/* ✅ CHANGED */}
           </Button>
         </form>
       </Box>

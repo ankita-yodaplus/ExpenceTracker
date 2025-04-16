@@ -1,3 +1,8 @@
 from django.contrib import admin
+from .models import Income
 
-# Register your models here.
+@admin.register(Income)
+class IncomeAdmin(admin.ModelAdmin):
+    list_display = ('user', 'source', 'amount', 'date', 'category')
+    list_filter = ('date', 'category')
+    search_fields = ('source', 'category__name', 'user__username')
